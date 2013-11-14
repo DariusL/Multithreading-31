@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
+	<classpathentry kind="lib" path="D:/Programavimas/jcsp-1.1-rc4/jcsp-1.1-rc4/jcsp.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/D:/Programavimas/jcsp-1.1-rc4/jcsp-1.1-rc4/jcsp-doc.zip!/jcsp-doc"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="D:/Programavimas/jcsp-1.1-rc4/jcsp-1.1-rc4/jcsp-core.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/D:/Programavimas/jcsp-1.1-rc4/jcsp-1.1-rc4/jcsp-core-doc.zip!/jcsp-core-doc"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
