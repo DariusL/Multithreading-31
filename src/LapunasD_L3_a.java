@@ -137,11 +137,15 @@ public class LapunasD_L3_a {
 	
 	static class Buffer implements CSProcess{
 		private ArrayList<Counter> data = new ArrayList<>();
+		
 		private ArrayList<ChannelOutputInt> consumerResults;
+		
 		private Alternative consumerRequestAlt;
 		private ChannelInput consumerRequests[];
+		
 		private Alternative productionAlt;
 		private ChannelInput production[];
+		
 		private boolean availableProducers[];
 		private boolean availableConsumers[];
 		private boolean hasConsumers = true;
@@ -204,7 +208,7 @@ public class LapunasD_L3_a {
 								consumerResults.get(c).write(taken);
 						}catch(PoisonException e){
 							availableConsumers[c] = false;
-							checkConsumers();
+							hasConsumers = hasTrue(availableConsumers);
 						}
 					}
 				}
@@ -217,40 +221,27 @@ public class LapunasD_L3_a {
 						
 					}catch(PoisonException e){
 						availableProducers[p] = false;
-						checkProducers();
+						hasProducers = hasTrue(availableProducers);
 					}
 				}else if(data.size() == 0){
 					for(ChannelInput req : consumerRequests){
 						req.poison(500);
 					}
 					Arrays.fill(availableConsumers, false);
-					checkConsumers();
+					hasConsumers = false;
 				}
 			}
-		}
-		
-		private void checkConsumers(){
-			for(boolean i : availableConsumers){
-				if(i){
-					hasConsumers = true;
-					return;
-				}
-			}
-			hasConsumers = false;
-		}
-		
-		private void checkProducers(){
-			for(boolean i : availableProducers){
-				if(i){
-					hasProducers = true;
-					return;
-				}
-			}
-			hasProducers = false;
 		}
 	}
 	
-	
+	public static boolean hasTrue(boolean[] arr){
+		for(boolean b : arr){
+			if(b){
+				return true;
+			}
+		}
+		return false;
+	}
 	
 	public static ArrayList<String> readLines(String filename) throws Exception{
         FileReader fileReader = new FileReader(filename);
