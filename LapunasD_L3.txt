@@ -43,7 +43,7 @@ vartotojai
 Dviratis 30
 Trys 20
 Penki 11
-Vienas 50
+Vienas 39
 
 Du 13
 Dviratis 50

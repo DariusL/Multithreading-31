@@ -6,12 +6,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.jcsp.lang.Alternative;
 import org.jcsp.lang.CSProcess;
 import org.jcsp.lang.Channel;
 import org.jcsp.lang.ChannelInput;
 import org.jcsp.lang.ChannelInputInt;
 import org.jcsp.lang.ChannelOutput;
 import org.jcsp.lang.ChannelOutputInt;
+import org.jcsp.lang.Guard;
 import org.jcsp.lang.One2OneChannel;
 import org.jcsp.lang.One2OneChannelInt;
 import org.jcsp.lang.Parallel;
@@ -125,6 +127,7 @@ public class LapunasD_L3_a {
 				requests.poison(500);
 			}catch(PoisonException e){
 				deficit.addAll(requirements);
+				requests.poison(500);
 			}
 			for(Counter def : deficit){
 				System.out.println(def.pav + ' ' + def.count); 
@@ -134,15 +137,29 @@ public class LapunasD_L3_a {
 	
 	static class Buffer implements CSProcess{
 		private ArrayList<Counter> data = new ArrayList<>();
-		private ArrayList<ChannelInput> consumerRequests;
-		private ArrayList<ChannelInput> production;
 		private ArrayList<ChannelOutputInt> consumerResults;
+		private Alternative consumerRequestAlt;
+		private ChannelInput consumerRequests[];
+		private Alternative productionAlt;
+		private ChannelInput production[];
+		private boolean availableProducers[];
+		private boolean availableConsumers[];
+		private boolean hasConsumers = true;
+		private boolean hasProducers = true;
 		
 		public Buffer(ArrayList<ChannelInput> consumerRequests, 
 				ArrayList<ChannelInput> production, ArrayList<ChannelOutputInt> consumerResults){
-			this.consumerRequests = consumerRequests;
+			this.consumerRequests = new ChannelInput[consumerRequests.size()];
+			consumerRequests.toArray(this.consumerRequests);
+			this.consumerRequestAlt = new Alternative(Arrays.copyOf(this.consumerRequests, this.consumerRequests.length, Guard[].class));
 			this.consumerResults = consumerResults;
-			this.production = production;
+			this.production = new ChannelInput[production.size()]; 
+			production.toArray(this.production);
+			this.productionAlt = new Alternative(Arrays.copyOf(this.production, this.production.length, Guard[].class));
+			availableConsumers = new boolean[consumerRequests.size()];
+			Arrays.fill(availableConsumers, true);
+			availableProducers = new boolean[production.size()];
+			Arrays.fill(availableProducers, true);
 		}
 		
 		private void add(Counter counter){
@@ -174,46 +191,66 @@ public class LapunasD_L3_a {
 
 		@Override
 		public void run() {
-			int p = 0, c = 0;
-			while(consumerRequests.size() + production.size() > 0){
+			while(hasProducers || hasConsumers){
 				if(data.size() > 0){
-					if(consumerRequests.size() > 0){
-						c++;
-						c %= consumerRequests.size();
+					if(hasConsumers){
+						int c = consumerRequestAlt.fairSelect(availableConsumers);
 						try{
-							Counter req = (Counter) consumerRequests.get(c).read();
+							Counter req = (Counter) consumerRequests[c].read();
 							int taken = take(req);
-							if(taken == 0 && production.size() == 0)
+							if(taken == 0 && !hasProducers)
 								consumerResults.get(c).poison(500);
 							else
 								consumerResults.get(c).write(taken);
 						}catch(PoisonException e){
-							consumerRequests.remove(c);
-							consumerResults.remove(c);
+							availableConsumers[c] = false;
+							checkConsumers();
 						}
 					}
 				}
 				
-				if(production.size() > 0){
-					p++;
-					p %= production.size();
-					
+				if(hasProducers){
+					int p = productionAlt.fairSelect(availableProducers);
 					try{
-						Counter in = (Counter) production.get(p).read();
+						Counter in = (Counter) production[p].read();
 						add(in);
 						
 					}catch(PoisonException e){
-						production.remove(p);
+						availableProducers[p] = false;
+						checkProducers();
 					}
 				}else if(data.size() == 0){
 					for(ChannelInput req : consumerRequests){
 						req.poison(500);
 					}
-					consumerRequests.clear();
+					Arrays.fill(availableConsumers, false);
+					checkConsumers();
 				}
 			}
 		}
+		
+		private void checkConsumers(){
+			for(boolean i : availableConsumers){
+				if(i){
+					hasConsumers = true;
+					return;
+				}
+			}
+			hasConsumers = false;
+		}
+		
+		private void checkProducers(){
+			for(boolean i : availableProducers){
+				if(i){
+					hasProducers = true;
+					return;
+				}
+			}
+			hasProducers = false;
+		}
 	}
+	
+	
 	
 	public static ArrayList<String> readLines(String filename) throws Exception{
         FileReader fileReader = new FileReader(filename);
