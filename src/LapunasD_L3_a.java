@@ -324,7 +324,7 @@ public class LapunasD_L3_a {
 		System.out.print("\nVartotojai\n\n");
 		for(int i = 0; i < cdata.size(); i++)
 			spausdinti(cdata.get(i), i);
-		System.out.print("Vartotojams truko:\n");
+		System.out.print("\nVartotojams truko:\n");
 		
 		ArrayList<CSProcess> threads = new ArrayList<>();
 		ArrayList<ChannelInput> production = new ArrayList<>();
