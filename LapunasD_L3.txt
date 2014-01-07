@@ -40,18 +40,18 @@ Vienas 3 16.615564382024736
 Vienas 18 0.20338860362065336
 
 vartotojai
-Dviratis 30
-Trys 20
-Penki 11
-Vienas 39
+aDviratis 30
+aTrys 20
+aPenki 11
+aVienas 39
 
-Du 13
-Dviratis 50
-Trys 40
-Keturi 45
+aDu 16
+aDviratis 50
+aTrys 40
+aKeturi 45
 
-Du 30
-Keturi 20
-Penki 50
-Trys 30
-Vienas 20
+aDu 30
+aKeturi 20
+aPenki 50
+aTrys 30
+aVienas 20

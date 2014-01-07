@@ -23,6 +23,7 @@ import org.jcsp.lang.PoisonException;
 public class LapunasD_L3_a {
     public static final String DELIMS = "[ ]+";
 	
+	//pagrindine duomenu struktura
 	static class Struct{
 		public String pav;
 		public int kiekis;
@@ -41,6 +42,7 @@ public class LapunasD_L3_a {
         }
 	}
 	
+	//skaitiklis naudojamas vartojimui
 	static class Counter implements Comparable<Counter>{
 		public String pav;
 		public int count;
@@ -71,9 +73,10 @@ public class LapunasD_L3_a {
 		}
 	}
 	
+	//gamintojas
 	static class Producer implements CSProcess{
-		private ArrayList<Struct> data;
-		private ChannelOutput writeChannel;
+		private ArrayList<Struct> data;//ka jis gamina
+		private ChannelOutput writeChannel;//isvedimo kanalas
 		
 		public Producer(ArrayList<Struct> data, ChannelOutput writeChanel){
 			this.data = data;
@@ -93,11 +96,12 @@ public class LapunasD_L3_a {
 		}
 	}
 	
+	//vartotojas
 	static class Consumer implements CSProcess{
-		private ArrayList<Counter> requirements;
-		private ArrayList<Counter> deficit;
-		private ChannelOutput requests;
-		private ChannelInputInt results;
+		private ArrayList<Counter> requirements;//ka reikia suvartoti
+		private ArrayList<Counter> deficit;//ko nepavyko suvartoti
+		private ChannelOutput requests;//kanalas uzklausoms siusti
+		private ChannelInputInt results;//kanalas atsakymams gauti
 		
 		public Consumer(ArrayList<Counter> requirements, ChannelOutput requests, ChannelInputInt results) {
 			deficit = new ArrayList<LapunasD_L3_a.Counter>();
@@ -115,9 +119,9 @@ public class LapunasD_L3_a {
 					i++;
 					i %= requirements.size();
 					
-					counter = requirements.get(i);
+					counter = requirements.get(i);//ko si karta prasysim
 					requests.write(counter);
-					int taken =  results.read();
+					int taken =  results.read();//kiek pavyko suvartoti
 					counter.count -= taken;
 
 					if(counter.count <= 0){
@@ -126,26 +130,30 @@ public class LapunasD_L3_a {
 				}
 				requests.poison(500);
 			}catch(PoisonException e){
-				deficit.addAll(requirements);
+				deficit.addAll(requirements);//jei mus pabaige valdytojas, nieko nebegausim
 				requests.poison(500);
 			}
 			for(Counter def : deficit){
-				System.out.println(def.pav + ' ' + def.count); 
+				System.out.println(def); 
 			}
 		}
 	}
 	
+	//valdytojas
 	static class Buffer implements CSProcess{
-		private ArrayList<Counter> data = new ArrayList<>();
+		private ArrayList<Counter> data = new ArrayList<>();//buferis
 		
-		private ArrayList<ChannelOutputInt> consumerResults;
+		private ArrayList<ChannelOutputInt> consumerResults;//kanalai siusti atsakymus vartotojams
 		
+		//kanalai ir pasirinkimai gauti uzklausas
 		private Alternative consumerRequestAlt;
 		private ChannelInput consumerRequests[];
 		
+		//kanalai ir pasirinkimai gauti apdoroti gamyba
 		private Alternative productionAlt;
 		private ChannelInput production[];
 		
+		//informacija apie veikiancius vartotojus/gamintojus
 		private boolean availableProducers[];
 		private boolean availableConsumers[];
 		private boolean hasConsumers = true;
@@ -153,6 +161,7 @@ public class LapunasD_L3_a {
 		
 		public Buffer(ArrayList<ChannelInput> consumerRequests, 
 				ArrayList<ChannelInput> production, ArrayList<ChannelOutputInt> consumerResults){
+			//nieko labai idomaus
 			this.consumerRequests = new ChannelInput[consumerRequests.size()];
 			consumerRequests.toArray(this.consumerRequests);
 			this.consumerRequestAlt = new Alternative(Arrays.copyOf(this.consumerRequests, this.consumerRequests.length, Guard[].class));
@@ -166,6 +175,7 @@ public class LapunasD_L3_a {
 			Arrays.fill(availableProducers, true);
 		}
 		
+		//naujo elemento pridejimas
 		private void add(Counter counter){
 			int found = Collections.binarySearch(data, counter);
 			if(found >= 0){
@@ -175,6 +185,7 @@ public class LapunasD_L3_a {
 			}
 		}
 		
+		//vartojimas
 		private int take(Counter req){
 			int taken = 0;
 			int found = Collections.binarySearch(data, req);
@@ -198,23 +209,23 @@ public class LapunasD_L3_a {
 			while(hasProducers || hasConsumers){
 				if(data.size() > 0){
 					if(hasConsumers){
-						int c = consumerRequestAlt.fairSelect(availableConsumers);
+						int c = consumerRequestAlt.fairSelect(availableConsumers);//issirenkam aprodojimui vartotoja
 						try{
 							Counter req = (Counter) consumerRequests[c].read();
 							int taken = take(req);
 							if(taken == 0 && !hasProducers)
-								consumerResults.get(c).poison(500);
+								consumerResults.get(c).poison(500);//nutraukiam vartojima jei nerado nieko gero ir nebera gamintoju
 							else
 								consumerResults.get(c).write(taken);
 						}catch(PoisonException e){
-							availableConsumers[c] = false;
+							availableConsumers[c] = false;//pazymim vartotoja kaip baigusi darba
 							hasConsumers = hasTrue(availableConsumers);
 						}
 					}
 				}
 				
 				if(hasProducers){
-					int p = productionAlt.fairSelect(availableProducers);
+					int p = productionAlt.fairSelect(availableProducers);//issirenkam gamintoja
 					try{
 						Counter in = (Counter) production[p].read();
 						add(in);
@@ -224,6 +235,7 @@ public class LapunasD_L3_a {
 						hasProducers = hasTrue(availableProducers);
 					}
 				}else if(data.size() == 0){
+					//jei nebera gamintoju ir duomenys baiges, stabdom vartojima
 					for(ChannelInput req : consumerRequests){
 						req.poison(500);
 					}
@@ -231,6 +243,14 @@ public class LapunasD_L3_a {
 					hasConsumers = false;
 				}
 			}
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder builder = new StringBuilder();
+			for(Counter c : data)
+				builder.append(c);
+			return builder.toString();
 		}
 	}
 	
@@ -326,12 +346,13 @@ public class LapunasD_L3_a {
 			spausdinti(cdata.get(i), i);
 		System.out.print("\nVartotojams truko:\n");
 		
-		ArrayList<CSProcess> threads = new ArrayList<>();
-		ArrayList<ChannelInput> production = new ArrayList<>();
-		ArrayList<ChannelInput> consumerRequests = new ArrayList<>();
-		ArrayList<ChannelOutputInt> consumerResults = new ArrayList<>();
+		ArrayList<CSProcess> threads = new ArrayList<>();//visos gijos
+		ArrayList<ChannelInput> production = new ArrayList<>();//gamybos kanalai valdytojui
+		ArrayList<ChannelInput> consumerRequests = new ArrayList<>();//vartotoju uzklausu kanalai valdytojui
+		ArrayList<ChannelOutputInt> consumerResults = new ArrayList<>();//vartotoju atsakymu kanalai valdytojui
 		
 		for(ArrayList<Counter> consumer : cdata){
+			//sukuriam vartotoja ir 2 kanalus
 			One2OneChannel request = Channel.one2one(0);
 			One2OneChannelInt result = Channel.one2oneInt(0);
 			
@@ -341,14 +362,22 @@ public class LapunasD_L3_a {
 		}
 		
 		for(ArrayList<Struct> producer : pdata){
+			//sukuriam gamintoja ir kanala
 			One2OneChannel channel = Channel.one2one(0);
 			
 			threads.add(new Producer(producer, channel.out()));
 			production.add(channel.in());			
 		}
 		
-		threads.add(new Buffer(consumerRequests, production, consumerResults));
+		//sukuriam valdytoja
+		Buffer buffer = new Buffer(consumerRequests, production, consumerResults);
+		
+		threads.add(buffer);
+		//apleidziame visas gijas
 		new Parallel(threads.toArray(new CSProcess[0])).run();
+		
+		System.out.print("\nNesuvartota liko:\n");
+		System.out.print(buffer);
 	}
 
 }
